@@ -1,0 +1,162 @@
+
+// Decompiled with JetBrains decompiler
+// Type: FeatSystems.DtToSql.Class1
+// Assembly: Featsystems.dttosql, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null
+// MVID: 0CC0AFCF-786B-4003-BFA9-955AC57D12CF
+// Assembly location: C:\Mohammad\Datatable nuget\Featsystems.dttosql.dll
+
+using Microsoft.Data.SqlClient;
+using System;
+using System.Activities;
+using System.ComponentModel;
+using System.Data;
+using System.Data.Common;
+
+#nullable disable
+namespace FeatSystems.DtToSql;
+
+[System.ComponentModel.DisplayName("Datatable to SQL table")]
+public class Class1 : CodeActivity
+{
+  [Category("Input")]
+  [RequiredArgument]
+  [Description("Datatable to push into SQL table.")]
+  public InArgument<DataTable> SourceDatatble { get; set; }
+
+  [Category("Input")]
+  [RequiredArgument]
+  [Description("Datatable columns names that map with SQL table columns.")]
+  public InArgument<string[]> SourceColumns { get; set; }
+
+  [Category("Input")]
+  [RequiredArgument]
+  [Description("The connection string used to establish a database connection.")]
+  public InArgument<string> ConnectionString { get; set; }
+
+  [Category("Input")]
+  [RequiredArgument]
+  [Description("SQL table name.")]
+  public InArgument<string> SQLTableName { get; set; }
+
+  [Category("Input")]
+  [RequiredArgument]
+  [Description("SQL table columns names that map with datatable columns.")]
+  public InArgument<string[]> DestinationColumns { get; set; }
+
+  protected override void Execute(CodeActivityContext context)
+  {
+    DataTable dataTable = this.SourceDatatble.Get((ActivityContext) context);
+    string[] strArray1 = this.SourceColumns.Get((ActivityContext) context);
+    string[] strArray2 = this.DestinationColumns.Get((ActivityContext) context);
+    string str1 = this.ConnectionString.Get((ActivityContext) context);
+    string str2 = this.SQLTableName.Get((ActivityContext) context);
+    if (strArray1.Length != strArray2.Length)
+      throw new Exception("Columns array lengths are not the same.");
+    try
+    {
+      using (SqlConnection sqlConnection = new SqlConnection(str1))
+      {
+        ((DbConnection) sqlConnection).Open();
+        using (SqlBulkCopy sqlBulkCopy = new SqlBulkCopy(sqlConnection))
+        {
+          sqlBulkCopy.DestinationTableName = str2;
+          for (int index = 0; index < strArray1.Length; ++index)
+            sqlBulkCopy.ColumnMappings.Add(strArray1[index], strArray2[index]);
+          sqlBulkCopy.WriteToServer(dataTable);
+        }
+        ((DbConnection) sqlConnection).Close();
+      }
+    }
+    catch (Exception ex)
+    {
+      throw new Exception("Error inserting data into SQL table: " + ex.Message);
+    }
+  }
+}"
+
+ChatGPT said:
+This C# class, Class1, is part of a .NET library named Featsystems.dttosql.dll. It's designed to be used in workflows (like those in Windows Workflow Foundation or UiPath) to bulk insert data from a .NET DataTable into a SQL Server table using SqlBulkCopy. Here's a breakdown of what it does:
+
+📦 Namespace & Inheritance
+csharp
+Copy
+Edit
+namespace FeatSystems.DtToSql;
+public class Class1 : CodeActivity
+Class1 is an activity in a workflow, inherited from CodeActivity.
+
+It can be used in automation tools like UiPath or custom .NET workflows.
+
+🧾 Properties (Inputs)
+Each of these is marked with metadata like [Category], [Description], etc., to help users understand its purpose in a designer (e.g., UiPath Studio).
+
+Property	Type	Description
+SourceDatatble	DataTable	The source data to insert into SQL
+SourceColumns	string[]	Column names from the DataTable to map
+ConnectionString	string	Connection string for SQL Server
+SQLTableName	string	Destination SQL table name
+DestinationColumns	string[]	Column names in the SQL table to map to
+
+⚙️ Execute Method
+This is where the main logic happens:
+
+1. Get Input Values
+csharp
+Copy
+Edit
+DataTable dataTable = this.SourceDatatble.Get(context);
+string[] strArray1 = this.SourceColumns.Get(context);
+string[] strArray2 = this.DestinationColumns.Get(context);
+string connectionString = this.ConnectionString.Get(context);
+string sqlTableName = this.SQLTableName.Get(context);
+2. Validation
+csharp
+Copy
+Edit
+if (strArray1.Length != strArray2.Length)
+    throw new Exception("Columns array lengths are not the same.");
+Ensures both source and destination column arrays have the same number of entries.
+
+3. Open SQL Connection and Use SqlBulkCopy
+csharp
+Copy
+Edit
+using (SqlConnection sqlConnection = new SqlConnection(connectionString))
+{
+    sqlConnection.Open();
+    using (SqlBulkCopy sqlBulkCopy = new SqlBulkCopy(sqlConnection))
+    {
+        sqlBulkCopy.DestinationTableName = sqlTableName;
+        for (int i = 0; i < strArray1.Length; i++)
+            sqlBulkCopy.ColumnMappings.Add(strArray1[i], strArray2[i]);
+
+        sqlBulkCopy.WriteToServer(dataTable);
+    }
+    sqlConnection.Close();
+}
+Establishes a SQL connection.
+
+Uses SqlBulkCopy for efficient bulk insert.
+
+Maps the DataTable columns to SQL table columns using ColumnMappings.
+
+Writes all rows from the DataTable to the SQL Server table.
+
+4. Error Handling
+csharp
+Copy
+Edit
+catch (Exception ex)
+{
+    throw new Exception("Error inserting data into SQL table: " + ex.Message);
+}
+✅ Summary
+This class:
+
+Accepts a DataTable, source & destination column mappings, a connection string, and SQL table name.
+
+Performs a bulk insert using SqlBulkCopy, mapping columns appropriately.
+
+Can be used in workflow-based tools or automation frameworks.
+
+Let me know if you want a sample usage or how to adapt it for use in something like UiPath or Power Automate.
